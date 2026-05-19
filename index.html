@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tour Virtual 360° com Hotspots</title>
+  
+  <!-- Importa o A-Frame atualizado (sem o aviso de luzes) -->
+  <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+
+  <!-- Lógica Javascript para mudar de ambiente -->
+  <script>
+    // Registra um componente personalizado no A-Frame chamado "mudar-cena"
+    AFRAME.registerComponent('mudar-cena', {
+      schema: {
+        destino: {type: 'string'} // ID da imagem para onde vai
+      },
+      init: function () {
+        var data = this.data;
+        var el = this.el; // O hotspot atual
+        
+        // Quando o usuário clicar (ou olhar fixamente) no hotspot
+        el.addEventListener('click', function () {
+          // 1. Encontra o céu (background) e muda a foto
+          var sky = document.querySelector('#ceu');
+          sky.setAttribute('src', data.destino);
+
+          // 2. Esconde todos os grupos de hotspots primeiro
+          document.querySelector('#hotspots-sala-principal').setAttribute('visible', 'false');
+          document.querySelector('#hotspots-sala-principal').setAttribute('scale', '0 0 0'); // Evita cliques fantasmas
+          
+          document.querySelector('#hotspots-sala-b').setAttribute('visible', 'false');
+          document.querySelector('#hotspots-sala-b').setAttribute('scale', '0 0 0');
+          
+          document.querySelector('#hotspots-sala-c').setAttribute('visible', 'false');
+          document.querySelector('#hotspots-sala-c').setAttribute('scale', '0 0 0');
+
+          // 3. Ativa apenas os hotspots da nova sala
+          var idAlvo = '';
+          if (data.destino === '#sala-principal') idAlvo = '#hotspots-sala-principal';
+          if (data.destino === '#sala-b') idAlvo = '#hotspots-sala-b';
+          if (data.destino === '#sala-c') idAlvo = '#hotspots-sala-c';
+
+          var novoGrupo = document.querySelector(idAlvo);
+          novoGrupo.setAttribute('visible', 'true');
+          novoGrupo.setAttribute('scale', '1 1 1');
+        });
+      }
+    });
+  </script>
+</head>
+<body style="margin: 0; overflow: hidden;">
+
+  <a-scene renderer="physicallyCorrectLights: true;">
+    
+    <!-- Pré-carregamento das imagens 360 e texturas -->
+    <a-assets>
+      <!-- Imagem 1: Sala Principal (Deserto) -->
+      <img id="sala-principal" crossorigin="anonymous" src="equirectangular-pano.png">
+      
+      <!-- Imagem 2: Sala B (Igreja antiga) -->
+      <img id="sala-b" crossorigin="anonymous" src="Street View 360.jpg">
+      
+      <!-- Imagem 3: Sala C (Observatório Espacial) -->
+      <img id="sala-c" crossorigin="anonymous" src="Gemini_Generated_Image_6su0rs6su0rs6su0.png">
+    </a-assets>
+
+    <!-- O CÉU: Começa mostrando a Sala Principal -->
+    <a-sky id="ceu" src="#sala-principal" rotation="0 -90 0"></a-sky>
+
+
+    <!-- ==================== GRUPO 1: HOTSPOTS DA SALA PRINCIPAL ==================== -->
+    <a-entity id="hotspots-sala-principal" visible="true" scale="1 1 1">
+      <!-- Hotspot para Sala B (Esfera Vermelha à esquerda) -->
+      <a-sphere position="-4 1.6 -3" radius="0.3" color="#FF5733" mudar-cena="destino: #sala-b">
+        <a-text value="Ir para o ISTEC" position="0 0.6 0" align="center" width="4" color="#FFF"></a-text>
+      </a-sphere>
+
+      <!-- Hotspot para Sala C (Esfera Azul à direita) -->
+      <a-sphere position="4 1.6 -3" radius="0.3" color="#3357FF" mudar-cena="destino: #sala-c">
+        <a-text value="Ir para a cidade" position="0 0.6 0" align="center" width="4" color="#FFF"></a-text>
+      </a-sphere>
+    </a-entity>
+
+
+    <!-- ==================== GRUPO 2: HOTSPOTS DA SALA B ==================== -->
+    <!-- Começa invisível (visible="false") -->
+    <a-entity id="hotspots-sala-b" visible="false" scale="0 0 0">
+      <!-- Hotspot para Voltar à Sala Principal (Esfera Branca no centro) -->
+      <a-sphere position="0 1.6 -4" radius="0.3" color="#FFFFFF" mudar-cena="destino: #sala-principal">
+        <a-text value="Voltar ao Inicio" position="0 0.6 0" align="center" width="4" color="#FF5733"></a-text>
+      </a-sphere>
+    </a-entity>
+
+
+    <!-- ==================== GRUPO 3: HOTSPOTS DA SALA C ==================== -->
+    <!-- Começa invisível (visible="false") -->
+    <a-entity id="hotspots-sala-c" visible="false" scale="0 0 0">
+      <!-- Hotspot para Voltar à Sala Principal (Esfera Branca no centro) -->
+      <a-sphere position="0 1.6 -4" radius="0.3" color="#FFFFFF" mudar-cena="destino: #sala-principal">
+        <a-text value="Voltar ao Inicio" position="0 0.6 0" align="center" width="4" color="#3357FF"></a-text>
+      </a-sphere>
+    </a-entity>
+
+
+    <!-- CÂMERA COM CURSOR (Garante que você consiga clicar/interagir no VR) -->
+    <a-entity camera look-controls position="0 1.6 0">
+      <!-- O cursor é uma "mira" no centro da visão do usuário -->
+      <!-- fuse="true" faz com que se você olhar por 1.5s (1500ms) para a bola, ela clique sozinha -->
+      <a-cursor id="cursor"
+                animation__click="property: scale; startEvents: click; from: 0.1 0.1 0.1; to: 1 1 1; dur: 150"
+                animation__fusing="property: fusing; startEvents: fusing; from: 1 1 1; to: 0.1 0.1 0.1; dur: 1500"
+                event-set__mouseenter="_event: mouseenter; color: springgreen"
+                event-set__mouseleave="_event: mouseleave; color: black"
+                raycaster="objects: a-sphere"
+                material="color: white; shader: flat"
+                position="0 0 -1"
+                geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03">
+      </a-cursor>
+    </a-entity>
+
+  </a-scene>
+
+</body>
+</html>
